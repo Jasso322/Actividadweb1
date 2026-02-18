@@ -1,15 +1,48 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
-
-
+def leer_archivo(nombre_archivo):
+    try:
+        with open(nombre_archivo, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>Error: Archivo no encontrado</h1>"
+    
+contenido = {
+    '/': leer_archivo('home.html'),
+    '/proyecto/1': "<html><h1>Proyecto 1: App de Libros</h1><p>Detalles de la Web Estática.</p></html>",
+    '/proyecto/2': "<html><h1>Proyecto 2: MeFalta</h1><p>Tu guía de series y películas.</p></html>",
+    '/proyecto/3': "<html><h1>Proyecto 3: Foto22</h1><p>Gestión inteligente de fotos.</p></html>",
+            }
 class WebRequestHandler(BaseHTTPRequestHandler):
     def url(self):
         return urlparse(self.path)
+
+    def ruta(self):
+        return self.url().path
 
     def query_data(self):
         return dict(parse_qsl(self.url().query))
 
     def do_GET(self):
+        path_solicitado = self.ruta()
+
+        # Buscamos la ruta en nuestro diccionario
+        if path_solicitado in contenido:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            
+            # Enviamos el contenido correspondiente
+            html = contenido[path_solicitado]
+            self.wfile.write(html.encode("utf-8"))
+        else:
+            # Si no existe la ruta (ej. alguien escribe /hola)
+            self.send_response(404)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<h1>404 - Pagina no encontrada</h1>")
+
+
         if self.valida_autor():
             self.send_response(200)
             self.send_header("Content-Type", "text/html")
